@@ -1,5 +1,7 @@
 # claude-tmux-namer
 
+[![Validate Plugin](https://github.com/cosgroveb/claude-tmux-namer/actions/workflows/validate.yml/badge.svg)](https://github.com/cosgroveb/claude-tmux-namer/actions/workflows/validate.yml)
+
 A Claude Code plugin that automatically renames your tmux window with a short phrase describing your current work.
 
 <img width="519" height="117" alt="image" src="https://github.com/user-attachments/assets/a99c14ee-aef7-43a6-8dee-5169a7886b18" />
