@@ -1,0 +1,12 @@
+{
+  "description": "Rename tmux session after each Claude response using Haiku",
+  "hooks": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tmux-namer.zsh",
+        "timeout": 2
+      }
+    ]
+  }
+}

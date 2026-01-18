@@ -1,0 +1,6 @@
+{
+  "name": "tmux-session-namer",
+  "version": "1.0.0",
+  "description": "Automatically names tmux sessions based on current work context",
+  "hooks": "../hooks/hooks.json"
+}
