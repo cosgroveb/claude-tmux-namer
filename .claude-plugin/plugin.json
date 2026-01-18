@@ -2,5 +2,13 @@
   "name": "tmux-window-namer",
   "version": "1.0.0",
   "description": "Automatically names tmux windows based on current work context",
-  "hooks": "./hooks/hooks.json"
+  "hooks": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tmux-namer.zsh",
+        "timeout": 2
+      }
+    ]
+  }
 }
