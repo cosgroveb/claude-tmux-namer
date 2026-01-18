@@ -1,5 +1,6 @@
 {
   "name": "claude-tmux-namer",
+  "description": "Claude Code plugins for tmux integration",
   "owner": {
     "name": "cosgroveb"
   },
