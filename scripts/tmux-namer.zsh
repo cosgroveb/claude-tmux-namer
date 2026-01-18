@@ -67,6 +67,9 @@ mkdir -p "$(dirname "$LOG_FILE")"
   # Sanitize name to alphanumeric and spaces only
   name=${name//[^a-zA-Z0-9 ]/}
 
-  # Only rename if we got a non-empty, reasonable result (25 char limit for status bar)
-  [[ -n $name && ${#name} -lt 25 ]] && tmux rename-window -t "$window_target" "$name"
+  # Truncate if too long (40 char limit for status bar readability)
+  (( ${#name} > 40 )) && name="${name:0:40}"
+
+  # Only rename if we got a non-empty result
+  [[ -n $name ]] && tmux rename-window -t "$window_target" "$name"
 } &!
