@@ -1,4 +1,4 @@
-.PHONY: install uninstall
+.PHONY: install uninstall clean reinstall
 
 PLUGIN_NAME := tmux-window-namer
 MARKETPLACE_NAME := claude-tmux-namer
@@ -12,7 +12,15 @@ install:
 
 uninstall:
 	@echo "Uninstalling plugin..."
-	claude plugin uninstall $(PLUGIN_NAME)
+	-claude plugin uninstall $(PLUGIN_NAME)
 	@echo "Removing marketplace..."
-	claude plugin marketplace remove $(MARKETPLACE_NAME)
+	-claude plugin marketplace remove $(MARKETPLACE_NAME)
 	@echo "Done."
+
+clean:
+	@echo "Cleaning up..."
+	-claude plugin uninstall $(PLUGIN_NAME) 2>/dev/null || true
+	-claude plugin marketplace remove $(MARKETPLACE_NAME) 2>/dev/null || true
+	@echo "Done."
+
+reinstall: clean install
