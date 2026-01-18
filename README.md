@@ -50,6 +50,33 @@ make uninstall
 - Claude Code CLI
 - tmux
 
+## FAQ
+
+### How much does this cost?
+
+Each rename uses Claude Haiku, the cheapest Claude model. Costs depend on whether Claude Code's context is cached:
+
+| Scenario | Cost | When it happens |
+|----------|------|-----------------|
+| Cached | ~$0.003 | Most calls—when you're actively working |
+| Not cached | ~$0.03-0.05 | First call in a session, or after ~5 min idle |
+
+**Why the difference?** Claude Code sends ~30K tokens of system context with each API call. The API caches this context for ~5 minutes. Cached reads cost 1/10th as much. Since you're typically making multiple Claude requests while working, most rename calls hit the cache.
+
+**Typical monthly cost:**
+- Light use: pennies
+- Heavy use: a few dollars
+
+### Can I monitor costs?
+
+Costs are logged to `~/.local/share/claude-tmux-namer/cost.log`:
+
+```
+2026-01-18T16:31:27+00:00 cost=$0.003 input=3 output=6 cache_read=25546 cache_create=520 name="fixing auth bug"
+```
+
+The `cache_read` and `cache_create` fields show how many tokens were read from vs written to the cache.
+
 ## License
 
 MIT

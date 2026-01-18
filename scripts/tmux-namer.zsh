@@ -27,16 +27,42 @@ window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}'
 
 [[ -z $window_target ]] && exit 0
 
+# Log file for cost tracking
+LOG_FILE="${XDG_DATA_HOME:-$HOME/.local/share}/claude-tmux-namer/cost.log"
+mkdir -p "$(dirname "$LOG_FILE")"
+
 # Background the API call to avoid blocking
 {
-  name=$(
+  output=$(
     claude --continue \
       --model haiku \
+      --output-format=stream-json \
+      --verbose \
       --print \
       --settings '{"disableAllHooks": true}' \
       -p "Generate a 2-4 word lowercase phrase describing this work session. Output ONLY the phrase, nothing else." \
       2>&1
   )
+
+  # Extract the name from assistant text messages (filter to JSON lines first)
+  name=$(echo "$output" | grep '^{' | jq -rs '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | add // empty' | tr -d '\n')
+
+  # Extract cost from result message and log it
+  result_line=$(echo "$output" | grep '"type":"result"' | head -1)
+  if [[ -n $result_line ]]; then
+    cost=$(echo "$result_line" | jq -r '.total_cost_usd // 0')
+    input_tokens=$(echo "$result_line" | jq -r '.usage.input_tokens // 0')
+    output_tokens=$(echo "$result_line" | jq -r '.usage.output_tokens // 0')
+    cache_read=$(echo "$result_line" | jq -r '.usage.cache_read_input_tokens // 0')
+    cache_create=$(echo "$result_line" | jq -r '.usage.cache_creation_input_tokens // 0')
+
+    # Escape quotes in name for log output
+    safe_name=${name//\"/\\\"}
+    echo "$(date -Iseconds) cost=\$${cost} input=${input_tokens} output=${output_tokens} cache_read=${cache_read} cache_create=${cache_create} name=\"${safe_name}\"" >> "$LOG_FILE"
+  else
+    # Log extraction failure for debugging
+    echo "$(date -Iseconds) error=\"no result line found\"" >> "$LOG_FILE"
+  fi
 
   # Only rename if we got a non-empty, reasonable result
   [[ -n $name && ${#name} -lt 50 ]] && tmux rename-window -t "$window_target" "$name"
