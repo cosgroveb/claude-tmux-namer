@@ -1,6 +1,6 @@
 .PHONY: install uninstall
 
-PLUGIN_NAME := tmux-session-namer
+PLUGIN_NAME := tmux-window-namer
 MARKETPLACE_NAME := claude-tmux-namer
 
 install:
@@ -8,7 +8,7 @@ install:
 	claude plugin marketplace add "$(shell pwd)"
 	@echo "Installing plugin..."
 	claude plugin install $(PLUGIN_NAME)@$(MARKETPLACE_NAME)
-	@echo "Done. The plugin will rename your tmux session after each Claude response."
+	@echo "Done. The plugin will rename your tmux window after each Claude response."
 
 uninstall:
 	@echo "Uninstalling plugin..."
