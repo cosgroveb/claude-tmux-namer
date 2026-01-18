@@ -2,6 +2,8 @@
 
 A Claude Code plugin that automatically renames your tmux window with a short phrase describing your current work.
 
+<img width="519" height="117" alt="image" src="https://github.com/user-attachments/assets/a99c14ee-aef7-43a6-8dee-5169a7886b18" />
+
 ## How it works
 
 After each Claude response, a Haiku agent reads the conversation context via `--continue` and generates a 2-4 word lowercase phrase (e.g., "fixing auth bug", "adding api endpoint"). The phrase becomes your tmux window name.
