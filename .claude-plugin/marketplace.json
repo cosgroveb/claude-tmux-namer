@@ -1,14 +1,14 @@
 {
   "name": "claude-tmux-namer",
-  "description": "Claude Code plugin that automatically names tmux windows based on work context",
+  "owner": {
+    "name": "cosgroveb"
+  },
   "plugins": [
     {
       "name": "tmux-window-namer",
+      "source": ".",
       "description": "Automatically renames your tmux window with a 2-4 word phrase describing your current work after each Claude response",
-      "source": {
-        "type": "relative",
-        "path": "."
-      }
+      "version": "1.0.0"
     }
   ]
 }
