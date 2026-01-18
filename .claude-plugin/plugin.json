@@ -1,6 +1,6 @@
 {
-  "name": "tmux-session-namer",
+  "name": "tmux-window-namer",
   "version": "1.0.0",
-  "description": "Automatically names tmux sessions based on current work context",
+  "description": "Automatically names tmux windows based on current work context",
   "hooks": "../hooks/hooks.json"
 }

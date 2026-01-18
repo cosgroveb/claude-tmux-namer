@@ -1,10 +1,10 @@
 {
   "name": "claude-tmux-namer",
-  "description": "Claude Code plugin that automatically names tmux sessions based on work context",
+  "description": "Claude Code plugin that automatically names tmux windows based on work context",
   "plugins": [
     {
-      "name": "tmux-session-namer",
-      "description": "Automatically renames your tmux session with a 2-4 word phrase describing your current work after each Claude response",
+      "name": "tmux-window-namer",
+      "description": "Automatically renames your tmux window with a 2-4 word phrase describing your current work after each Claude response",
       "source": {
         "type": "relative",
         "path": "."

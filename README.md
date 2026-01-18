@@ -12,6 +12,15 @@ After each Claude response, a Haiku agent reads the conversation context via `--
 
 ## Installation
 
+Using Claude Code slash commands:
+
+```
+/plugin marketplace add git@github.com:cosgroveb/claude-tmux-namer.git
+/plugin install tmux-window-namer@claude-tmux-namer
+```
+
+Or clone and install manually:
+
 ```bash
 git clone git@github.com:cosgroveb/claude-tmux-namer.git
 cd claude-tmux-namer
@@ -19,6 +28,13 @@ make install
 ```
 
 ## Uninstallation
+
+```
+/plugin uninstall tmux-window-namer
+/plugin marketplace remove claude-tmux-namer
+```
+
+Or manually:
 
 ```bash
 cd claude-tmux-namer
