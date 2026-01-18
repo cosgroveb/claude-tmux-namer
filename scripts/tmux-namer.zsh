@@ -64,6 +64,9 @@ mkdir -p "$(dirname "$LOG_FILE")"
     echo "$(date -Iseconds) error=\"no result line found\"" >> "$LOG_FILE"
   fi
 
-  # Only rename if we got a non-empty, reasonable result
-  [[ -n $name && ${#name} -lt 50 ]] && tmux rename-window -t "$window_target" "$name"
+  # Sanitize name to alphanumeric and spaces only
+  name=${name//[^a-zA-Z0-9 ]/}
+
+  # Only rename if we got a non-empty, reasonable result (25 char limit for status bar)
+  [[ -n $name && ${#name} -lt 25 ]] && tmux rename-window -t "$window_target" "$name"
 } &!
