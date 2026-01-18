@@ -5,9 +5,13 @@
   "hooks": {
     "Stop": [
       {
-        "type": "command",
-        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tmux-namer.zsh",
-        "timeout": 2
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tmux-namer.zsh",
+            "timeout": 2
+          }
+        ]
       }
     ]
   }
