@@ -8,6 +8,8 @@ install:
 	claude plugin marketplace add "$(shell pwd)"
 	@echo "Installing plugin..."
 	claude plugin install $(PLUGIN_NAME)@$(MARKETPLACE_NAME)
+	@echo "Enabling plugin..."
+	claude plugin enable $(PLUGIN_NAME)@$(MARKETPLACE_NAME)
 	@echo "Done. The plugin will rename your tmux window after each Claude response."
 
 uninstall:
