@@ -44,6 +44,13 @@ mkdir -p "$(dirname "$LOG_FILE")"
       2>&1
   )
 
+  # Check for API errors and skip rename
+  if echo "$output" | grep -q '"type":"error"'; then
+    error_msg=$(echo "$output" | grep '"type":"error"' | jq -r '.error.message // "unknown"' 2>/dev/null | head -1)
+    echo "$(date -Iseconds) error=\"API error\" message=\"${error_msg}\"" >> "$LOG_FILE"
+    exit 0
+  fi
+
   # Extract the name from assistant text messages (filter to JSON lines first)
   name=$(echo "$output" | grep '^{' | jq -rs '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | add // empty' | tr -d '\n')
 
