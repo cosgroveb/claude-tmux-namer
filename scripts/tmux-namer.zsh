@@ -23,6 +23,7 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
 # 3. Find which tmux pane owns that TTY
 claude_tty=$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')
 [[ -z $claude_tty ]] && exit 0
+# Normalize TTY path (Linux: pts/N, macOS: ttysNNN)
 [[ $claude_tty != /* ]] && claude_tty="/dev/$claude_tty"
 
 window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}' 2>/dev/null | \
@@ -48,16 +49,15 @@ transcript_path=$(jq -r '.transcript_path // empty' 2>/dev/null <<< "$hook_paylo
     exit 0
   fi
 
-  context=$(jq -r '
-    select(.type == "user") |
-    .message.content |
-    if type == "array" then
-      map(select(.type == "text") | .text) | join(" ")
-    elif type == "string" then .
-    else empty
-    end
-  ' "$transcript_path" 2>/dev/null \
-    | head -3 \
+  context=$(grep -m 3 '"type":"user"' "$transcript_path" \
+    | jq -r '
+        .message.content |
+        if type == "array" then
+          map(select(.type == "text") | .text) | join(" ")
+        elif type == "string" then .
+        else empty
+        end
+      ' 2>/dev/null \
     | awk '{ print substr($0, 1, 300) }' \
     | tr '\n' ' ')
 
