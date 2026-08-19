@@ -14,33 +14,13 @@
 # PATH that may omit /usr/bin and /opt/homebrew/bin.
 export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
 
-# Exit silently if not in tmux
-[[ -z $TMUX ]] && exit 0
+# Worker mode: the detached re-exec (see the handoff at the bottom of the file)
+# lands here and does the actual API call and rename.
+if [[ -n $TMUX_NAMER_WORKER ]]; then
+  transcript_path=$TMUX_NAMER_TRANSCRIPT
+  window_target=$TMUX_NAMER_WINDOW
+  LOG_FILE=$TMUX_NAMER_LOG
 
-# Determine which tmux window Claude is running in:
-# 1. Get this hook's parent PID (the Claude process)
-# 2. Get its TTY
-# 3. Find which tmux pane owns that TTY
-claude_tty=$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')
-[[ -z $claude_tty ]] && exit 0
-# Normalize TTY path (Linux: pts/N, macOS: ttysNNN)
-[[ $claude_tty != /* ]] && claude_tty="/dev/$claude_tty"
-
-window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}' 2>/dev/null | \
-  awk -v tty="$claude_tty" '$1 == tty { print $2; exit }')
-[[ -z $window_target ]] && exit 0
-
-# Log file for cost tracking
-LOG_FILE="${XDG_DATA_HOME:-$HOME/.local/share}/claude-tmux-namer/cost.log"
-mkdir -p "$(dirname "$LOG_FILE")"
-
-# Read the Stop hook payload from stdin. Claude Code pipes a JSON object
-# containing transcript_path; cat returns immediately when the pipe closes.
-hook_payload=$(cat 2>/dev/null)
-transcript_path=$(jq -r '.transcript_path // empty' 2>/dev/null <<< "$hook_payload")
-
-# Background the API call so the hook returns immediately.
-{
   # Build a prompt from the first 3 user messages in the transcript (capped at
   # 300 chars each). This avoids the large cache_create cost that --continue
   # triggers by loading the full conversation into a cold cache.
@@ -106,4 +86,58 @@ Generate a 2-4 word lowercase phrase describing this work. Output ONLY the phras
   name=${name//[^a-zA-Z0-9 ]/}
   (( ${#name} > 40 )) && name="${name:0:40}"
   [[ -n $name ]] && tmux rename-window -t "$window_target" "$name"
-} &!
+  exit 0
+fi
+
+# Hook entry point. Runs in the foreground under a 2s timeout, so it only finds
+# the target window and hands off to the worker.
+
+# Exit silently if not in tmux
+[[ -z $TMUX ]] && exit 0
+
+# Find the tmux window Claude is running in. Claude Code spawns the hook through
+# an intermediate `sh` with no controlling TTY, so $PPID's TTY is unusable.
+# Walk up the process tree and take the first ancestor whose TTY maps to a tmux
+# pane — that's Claude's own pane.
+window_target=""
+pid=$PPID
+while [[ -n $pid && $pid -gt 1 ]]; do
+  anc_tty=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
+  if [[ -n $anc_tty && $anc_tty != '?' ]]; then
+    # Normalize TTY path (Linux: pts/N, macOS: ttysNNN)
+    [[ $anc_tty != /* ]] && anc_tty="/dev/$anc_tty"
+    window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}' 2>/dev/null | \
+      awk -v tty="$anc_tty" '$1 == tty { print $2; exit }')
+    [[ -n $window_target ]] && break
+  fi
+  pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+done
+[[ -z $window_target ]] && exit 0
+
+# Log file for cost tracking
+LOG_FILE="${XDG_DATA_HOME:-$HOME/.local/share}/claude-tmux-namer/cost.log"
+mkdir -p "$(dirname "$LOG_FILE")"
+
+# Read the Stop hook payload from stdin. Claude Code pipes a JSON object
+# containing transcript_path; cat returns immediately when the pipe closes.
+hook_payload=$(cat 2>/dev/null)
+transcript_path=$(jq -r '.transcript_path // empty' 2>/dev/null <<< "$hook_payload")
+
+# Hand the work to a detached worker in its own session. Claude Code kills the
+# hook's process group the moment the hook returns, and a plain background job
+# (&!) stays in that group and dies before the API call finishes. setsid moves
+# the worker into a new session so it survives. macOS has no setsid, so fall
+# back to perl's POSIX::setsid there.
+export TMUX_NAMER_WORKER=1
+export TMUX_NAMER_TRANSCRIPT="$transcript_path"
+export TMUX_NAMER_WINDOW="$window_target"
+export TMUX_NAMER_LOG="$LOG_FILE"
+
+if command -v setsid >/dev/null 2>&1; then
+  setsid "$0" </dev/null >/dev/null 2>&1 &
+else
+  perl -MPOSIX -e 'setsid; exec @ARGV' "$0" </dev/null >/dev/null 2>&1 &
+fi
+disown 2>/dev/null
+
+exit 0

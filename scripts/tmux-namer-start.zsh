@@ -14,12 +14,21 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
 
 [[ -z $TMUX ]] && exit 0
 
-claude_tty=$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')
-[[ -z $claude_tty ]] && exit 0
-[[ $claude_tty != /* ]] && claude_tty="/dev/$claude_tty"
-
-window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}' 2>/dev/null | \
-  awk -v tty="$claude_tty" '$1 == tty { print $2; exit }')
+# Find Claude's tmux window. Claude Code spawns the hook through an intermediate
+# `sh` with no controlling TTY, so walk up the process tree and take the first
+# ancestor whose TTY maps to a tmux pane.
+window_target=""
+pid=$PPID
+while [[ -n $pid && $pid -gt 1 ]]; do
+  anc_tty=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
+  if [[ -n $anc_tty && $anc_tty != '?' ]]; then
+    [[ $anc_tty != /* ]] && anc_tty="/dev/$anc_tty"
+    window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}' 2>/dev/null | \
+      awk -v tty="$anc_tty" '$1 == tty { print $2; exit }')
+    [[ -n $window_target ]] && break
+  fi
+  pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+done
 [[ -z $window_target ]] && exit 0
 
 current_name=$(tmux display-message -t "$window_target" -p '#{window_name}' 2>/dev/null)
