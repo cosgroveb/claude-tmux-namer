@@ -95,17 +95,23 @@ fi
 # Exit silently if not in tmux
 [[ -z $TMUX ]] && exit 0
 
-# Determine which tmux window Claude is running in:
-# 1. Get this hook's parent PID (the Claude process)
-# 2. Get its TTY
-# 3. Find which tmux pane owns that TTY
-claude_tty=$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')
-[[ -z $claude_tty ]] && exit 0
-# Normalize TTY path (Linux: pts/N, macOS: ttysNNN)
-[[ $claude_tty != /* ]] && claude_tty="/dev/$claude_tty"
-
-window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}' 2>/dev/null | \
-  awk -v tty="$claude_tty" '$1 == tty { print $2; exit }')
+# Find the tmux window Claude is running in. Claude Code spawns the hook through
+# an intermediate `sh` with no controlling TTY, so $PPID's TTY is unusable.
+# Walk up the process tree and take the first ancestor whose TTY maps to a tmux
+# pane — that's Claude's own pane.
+window_target=""
+pid=$PPID
+while [[ -n $pid && $pid -gt 1 ]]; do
+  anc_tty=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
+  if [[ -n $anc_tty && $anc_tty != '?' ]]; then
+    # Normalize TTY path (Linux: pts/N, macOS: ttysNNN)
+    [[ $anc_tty != /* ]] && anc_tty="/dev/$anc_tty"
+    window_target=$(tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_id}' 2>/dev/null | \
+      awk -v tty="$anc_tty" '$1 == tty { print $2; exit }')
+    [[ -n $window_target ]] && break
+  fi
+  pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+done
 [[ -z $window_target ]] && exit 0
 
 # Log file for cost tracking
