@@ -11,7 +11,7 @@
       "name": "tmux-window-namer",
       "source": "./",
       "description": "Automatically renames your tmux window with a 2-4 word phrase describing your current work after each Claude response",
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ]
 }

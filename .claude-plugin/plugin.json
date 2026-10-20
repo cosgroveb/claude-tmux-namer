@@ -1,6 +1,6 @@
 {
   "name": "tmux-window-namer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Automatically names tmux windows based on current work context",
   "hooks": {
     "SessionStart": [

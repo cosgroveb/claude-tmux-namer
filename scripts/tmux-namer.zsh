@@ -56,6 +56,7 @@ Generate a 2-4 word lowercase phrase describing this work. Output ONLY the phras
     --verbose \
     --print \
     --settings '{"disableAllHooks": true}' \
+    --strict-mcp-config \
     -p "$prompt" \
     2>&1)
 
