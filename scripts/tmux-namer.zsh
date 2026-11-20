@@ -69,7 +69,7 @@ Generate a 2-4 word lowercase phrase describing this work. Output ONLY the phras
 
   # Extract name and log cost metrics
   result_line=$(echo "$output" | grep '"type":"result"' | head -1)
-  name=$(echo "$result_line" | jq -r '.result // empty' | tr -d '\n')
+  name=$(echo "$result_line" | jq -r '.result // empty' | tr '\n' ' ')
 
   if [[ -n $result_line ]]; then
     cost=$(echo "$result_line" | jq -r '.total_cost_usd // 0')
@@ -83,8 +83,13 @@ Generate a 2-4 word lowercase phrase describing this work. Output ONLY the phras
     echo "$(date -Iseconds) error=\"no result line found\"" >> "$LOG_FILE"
   fi
 
-  # Sanitize and truncate, then rename
+  # Haiku sometimes returns a slug like "foo-bar-baz". Turn separators into
+  # spaces first so the strip below does not join the words.
+  name=${name//[-_]/ }
   name=${name//[^a-zA-Z0-9 ]/}
+  while [[ $name == *"  "* ]]; do name=${name//  / }; done
+  name=${name# }
+  name=${name% }
   (( ${#name} > 40 )) && name="${name:0:40}"
   [[ -n $name ]] && tmux rename-window -t "$window_target" "$name"
   exit 0
